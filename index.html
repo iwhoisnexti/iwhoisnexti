@@ -243,14 +243,18 @@ function connect() {
 
 function handleMessage(data) {
     var type = data.type;
+    console.log('Received message type:', type, data);
     
     if (type === 'gps') {
         onGPS(data);
     } else if (type === 'yt_results' || type === 'place_results') {
+        console.log('Got results for id:', data.id, 'count:', data.results ? data.results.length : 0);
         var cb = pendingCallbacks[data.id];
         if (cb) {
             cb(data.results);
             delete pendingCallbacks[data.id];
+        } else {
+            console.log('No callback found for id:', data.id);
         }
     }
 }
@@ -260,14 +264,23 @@ function sendCommand(cmd, callback) {
     cmd.id = id;
     if (callback) pendingCallbacks[id] = callback;
     
-    fetch('https://ntfy.sh/carscreen-cmd-' + sessionCode, {
+    var url = 'https://ntfy.sh/carscreen-cmd-' + sessionCode;
+    console.log('Sending command to:', url, cmd);
+    
+    fetch(url, {
         method: 'POST',
-        body: JSON.stringify(cmd)
-    }).catch(function() {});
+        body: JSON.stringify(cmd),
+        headers: { 'Content-Type': 'application/json' }
+    }).then(function(r) {
+        console.log('Command sent, status:', r.status);
+    }).catch(function(e) {
+        console.error('Command send failed:', e);
+    });
     
     // Timeout
     setTimeout(function() {
         if (pendingCallbacks[id]) {
+            console.log('Command timeout:', id);
             pendingCallbacks[id]([]);
             delete pendingCallbacks[id];
         }
@@ -339,11 +352,14 @@ function ytSearch() {
     if (!q) return;
     
     var results = document.getElementById('ytR');
-    results.innerHTML = '<div class="empty"><div class="icon">🔍</div>Searching...</div>';
+    results.innerHTML = '<div class="empty"><div class="icon">🔍</div>Searching via phone...<br><small>Code: ' + sessionCode + '</small></div>';
+    
+    console.log('YouTube search:', q, 'session:', sessionCode);
     
     sendCommand({ type: 'yt_search', q: q }, function(data) {
+        console.log('YouTube results received:', data);
         if (!data || data.length === 0) {
-            results.innerHTML = '<div class="empty"><div class="icon">😕</div>No results</div>';
+            results.innerHTML = '<div class="empty"><div class="icon">😕</div>No results<br><small>Check phone app is running</small></div>';
             return;
         }
         
@@ -392,16 +408,24 @@ function placeSearch() {
     if (q.length < 3) { document.getElementById('suggestions').classList.remove('show'); return; }
     
     searchTimeout = setTimeout(function() {
+        console.log('Place search:', q, 'at', lat, lng);
+        
+        var sug = document.getElementById('suggestions');
+        sug.innerHTML = '<div class="item"><div class="name">Searching...</div></div>';
+        sug.classList.add('show');
+        
         sendCommand({ type: 'place_search', q: q, lat: lat, lng: lng }, function(data) {
-            var sug = document.getElementById('suggestions');
-            if (!data || data.length === 0) { sug.classList.remove('show'); return; }
+            console.log('Place results:', data);
+            if (!data || data.length === 0) { 
+                sug.innerHTML = '<div class="item"><div class="name">No results</div></div>';
+                return; 
+            }
             
             sug.innerHTML = data.map(function(p) {
                 return '<div class="item" onclick="selectPlace(' + p.lat + ',' + p.lng + ',\'' + esc(p.name) + '\')">' +
                     '<div class="name">' + esc(p.name) + '</div>' +
                     '<div class="addr">' + esc(p.address) + '</div></div>';
             }).join('');
-            sug.classList.add('show');
         });
     }, 500);
 }
