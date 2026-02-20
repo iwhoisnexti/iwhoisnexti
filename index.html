@@ -2,452 +2,1189 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>CarScreen</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>CarScreen Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0e14;--surface:#12171f;--card:#1a2030;--border:#2a3444;--primary:#3b8bff;--green:#2ed573;--red:#ff4757;--yellow:#ffa502;--text:#e8edf4;--text2:#6b7d95}
-html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text)}
-.app{display:flex;flex-direction:column;height:100%}
-.top{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:48px;background:var(--surface);border-bottom:1px solid var(--border)}
-.top .t{font-weight:600;font-size:16px}
-.top .gps{font-size:12px;padding:4px 10px;border-radius:12px;background:var(--card)}
-.top .gps.ok{color:var(--green)}
-.top .gps.warn{color:var(--yellow)}
-.top .gps.err{color:var(--red)}
-.main{flex:1;overflow:hidden;position:relative}
-.panel{position:absolute;inset:0;overflow-y:auto;display:none;flex-direction:column}
-.panel.active{display:flex}
-.nav{display:flex;background:var(--surface);border-top:1px solid var(--border);height:60px}
-.nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:none;border:none;color:var(--text2);cursor:pointer;font-size:11px}
-.nav button .icon{font-size:22px}
-.nav button.on{color:var(--primary)}
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a28;
+    --bg-card-hover: #222236;
+    --accent-open: #00d4aa;
+    --accent-open-glow: rgba(0, 212, 170, 0.3);
+    --accent-secure: #7c6aff;
+    --accent-secure-glow: rgba(124, 106, 255, 0.3);
+    --text-primary: #eeeef0;
+    --text-secondary: #8888a0;
+    --text-muted: #555568;
+    --border: #2a2a3a;
+    --danger: #ff4466;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --tab-height: 54px;
+  }
 
-.home{padding:24px;overflow-y:auto}
-.home h1{font-size:24px;margin-bottom:8px}
-.home .sub{color:var(--text2);font-size:14px;margin-bottom:24px}
-.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.tile{padding:24px 16px;border-radius:14px;cursor:pointer;background:var(--card);border:1px solid var(--border);text-align:center;transition:transform .1s}
-.tile:active{transform:scale(.96)}
-.tile .i{font-size:36px;margin-bottom:10px}
-.tile .l{font-size:15px;font-weight:600}
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-.connect{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:32px;text-align:center}
-.connect h1{font-size:28px;margin-bottom:8px}
-.connect .sub{color:var(--text2);font-size:14px;margin-bottom:32px}
-.connect .code-input{display:flex;gap:8px;margin-bottom:24px}
-.connect input{width:50px;height:60px;font-size:28px;text-align:center;background:var(--card);border:2px solid var(--border);border-radius:12px;color:var(--text);text-transform:uppercase;outline:none}
-.connect input:focus{border-color:var(--primary)}
-.connect button{padding:16px 48px;border-radius:28px;border:none;background:var(--primary);color:#fff;font-size:16px;font-weight:600;cursor:pointer}
-.connect button:disabled{opacity:0.5}
-.connect .status{margin-top:16px;font-size:14px;color:var(--text2)}
-.connect .status.ok{color:var(--green)}
-.connect .status.err{color:var(--red)}
+  html, body {
+    height: 100%; width: 100%;
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
 
-.yt{display:flex;flex-direction:column;height:100%}
-.search{display:flex;gap:8px;padding:12px;background:var(--surface)}
-.search input{flex:1;padding:12px 16px;border-radius:24px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px;outline:none}
-.search button{padding:12px 20px;border-radius:24px;border:none;background:#ff0033;color:#fff;font-weight:600;cursor:pointer;font-size:14px}
-.player{background:#000;aspect-ratio:16/9;max-height:40vh;position:relative}
-.player.hide{display:none}
-.player iframe{width:100%;height:100%;border:none}
-.player-close{position:absolute;top:8px;right:8px;z-index:10;background:rgba(0,0,0,0.7);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer}
-.results{flex:1;overflow-y:auto;padding:12px}
-.vlist{display:grid;gap:10px}
-.vcard{display:flex;gap:12px;padding:10px;background:var(--card);border-radius:10px;cursor:pointer}
-.vcard:active{opacity:.8}
-.vcard .th{width:140px;height:80px;border-radius:8px;overflow:hidden;background:var(--border);flex-shrink:0}
-.vcard .th.round{width:80px;border-radius:50%}
-.vcard .th img{width:100%;height:100%;object-fit:cover}
-.vcard.channel{border-left:3px solid var(--primary)}
-.ch-badge{background:var(--primary);color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;margin-right:6px}
-.vcard .inf{display:flex;flex-direction:column;justify-content:center;overflow:hidden;flex:1}
-.vcard .tt{font-size:13px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3}
-.vcard .ch{font-size:11px;color:var(--text2);margin-top:6px}
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--text2);text-align:center}
-.empty .icon{font-size:48px;margin-bottom:16px}
+  /* ── LANDING SCREEN ── */
+  #landing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+  }
 
-.maps{display:flex;flex-direction:column;height:100%}
-.maps .bar{padding:12px;background:var(--surface);position:relative}
-.maps .bar .row{display:flex;gap:8px}
-.maps .bar input{flex:1;padding:12px 16px;border-radius:24px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px;outline:none}
-.maps .bar button{padding:12px 20px;border-radius:24px;border:none;background:var(--green);color:#fff;font-weight:600;cursor:pointer;font-size:14px}
-.suggestions{position:absolute;top:100%;left:12px;right:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;max-height:200px;overflow-y:auto;z-index:1001;display:none}
-.suggestions.show{display:block}
-.suggestions .item{padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px}
-.suggestions .item:last-child{border-bottom:none}
-.suggestions .item:active{background:var(--surface)}
-.suggestions .item .name{font-weight:600}
-.suggestions .item .addr{font-size:12px;color:var(--text2);margin-top:2px}
-.maps .mapwrap{flex:1;position:relative}
-#map{width:100%;height:100%;background:#1a1a2e}
-.hud{position:absolute;bottom:16px;left:12px;right:12px;z-index:1000;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none}
-.hud>*{pointer-events:auto}
-.speed-box{background:rgba(10,14,20,.95);border-radius:12px;padding:12px 16px;border:1px solid var(--border)}
-.speed-box .spd{font-size:36px;font-weight:700}
-.speed-box .unit{font-size:12px;color:var(--text2);margin-left:2px}
-.map-btns{display:flex;flex-direction:column;gap:8px}
-.map-btns button{width:44px;height:44px;border-radius:12px;background:rgba(10,14,20,.95);border:1px solid var(--border);color:var(--text);font-size:20px;cursor:pointer}
-.map-btns button.on{color:var(--primary);border-color:var(--primary)}
+  #landing::before {
+    content: '';
+    position: absolute;
+    top: -40%; left: -20%;
+    width: 140%; height: 140%;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(0, 212, 170, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(124, 106, 255, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .landing-logo {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .landing-title {
+    font-size: clamp(36px, 6vw, 56px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .landing-subtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 56px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .mode-buttons {
+    display: flex;
+    gap: 24px;
+    position: relative;
+    z-index: 1;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: 24px;
+    padding: 40px 48px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 220px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mode-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+    border-radius: 24px;
+  }
+
+  .mode-btn.open::before {
+    background: radial-gradient(circle at 50% 80%, var(--accent-open-glow), transparent 70%);
+  }
+  .mode-btn.secure::before {
+    background: radial-gradient(circle at 50% 80%, var(--accent-secure-glow), transparent 70%);
+  }
+
+  .mode-btn:hover::before, .mode-btn:active::before { opacity: 1; }
+
+  .mode-btn:hover {
+    transform: translateY(-4px);
+    border-color: var(--text-muted);
+  }
+  .mode-btn.open:hover { border-color: var(--accent-open); }
+  .mode-btn.secure:hover { border-color: var(--accent-secure); }
+
+  .mode-icon {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+  }
+  .mode-btn.open .mode-icon { background: rgba(0, 212, 170, 0.12); color: var(--accent-open); }
+  .mode-btn.secure .mode-icon { background: rgba(124, 106, 255, 0.12); color: var(--accent-secure); }
+
+  .mode-icon svg { width: 28px; height: 28px; }
+
+  .mode-label {
+    font-size: 20px;
+    font-weight: 600;
+    position: relative; z-index: 1;
+  }
+
+  .mode-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    position: relative; z-index: 1;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* ── APP SCREEN ── */
+  #app {
+    display: none;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+  }
+
+  /* Top bar */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    height: var(--tab-height);
+  }
+
+  .top-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .back-btn {
+    background: none; border: none; color: var(--text-secondary);
+    cursor: pointer; padding: 8px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .back-btn:hover { background: var(--bg-card); color: var(--text-primary); }
+  .back-btn svg { width: 20px; height: 20px; }
+
+  .tab-group {
+    display: flex;
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .tab-btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    color: var(--text-secondary);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab-btn svg { width: 16px; height: 16px; }
+  .tab-btn.active { background: var(--text-primary); color: var(--bg-primary); }
+
+  .connection-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .connection-badge.open { background: rgba(0, 212, 170, 0.12); color: var(--accent-open); }
+  .connection-badge.secure { background: rgba(124, 106, 255, 0.12); color: var(--accent-secure); }
+
+  /* Tab content */
+  .tab-content {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .tab-content.active { display: flex; }
+
+  /* ── YOUTUBE TAB ── */
+  .yt-search-bar {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    flex-shrink: 0;
+  }
+
+  .yt-search-bar input {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    color: var(--text-primary);
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .yt-search-bar input:focus { border-color: var(--text-muted); }
+  .yt-search-bar input::placeholder { color: var(--text-muted); }
+
+  .yt-search-bar button {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 12px 20px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+  .yt-search-bar button:hover { opacity: 0.85; }
+
+  .yt-results {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .yt-results::-webkit-scrollbar { width: 6px; }
+  .yt-results::-webkit-scrollbar-track { background: transparent; }
+  .yt-results::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .yt-card {
+    display: flex;
+    gap: 14px;
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .yt-card:hover { background: var(--bg-card-hover); }
+
+  .yt-thumb {
+    width: 160px;
+    min-width: 160px;
+    aspect-ratio: 16/9;
+    border-radius: 8px;
+    object-fit: cover;
+    background: var(--bg-secondary);
+  }
+
+  .yt-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .yt-title {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .yt-channel {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .yt-player-wrap {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    background: #000;
+  }
+  .yt-player-wrap.active { display: flex; }
+
+  .yt-player-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .yt-back-btn {
+    background: none; border: none; color: var(--text-secondary);
+    cursor: pointer; padding: 6px; border-radius: 8px; display: flex;
+    transition: all 0.2s;
+  }
+  .yt-back-btn:hover { background: var(--bg-card); color: var(--text-primary); }
+  .yt-back-btn svg { width: 18px; height: 18px; }
+
+  .yt-player-title {
+    font-size: 14px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  .yt-player-frame {
+    flex: 1;
+    border: none;
+    width: 100%;
+  }
+
+  .yt-placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-muted);
+  }
+  .yt-placeholder svg { width: 48px; height: 48px; opacity: 0.4; }
+  .yt-placeholder span { font-size: 15px; }
+
+  /* ── GOOGLE MAPS TAB ── */
+  .maps-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  #map {
+    flex: 1;
+    background: var(--bg-secondary);
+  }
+
+  .maps-search-bar {
+    position: absolute;
+    top: 12px; left: 12px; right: 12px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  .maps-search-bar input {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    color: var(--text-primary);
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    outline: none;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    transition: border-color 0.2s;
+  }
+  .maps-search-bar input:focus { border-color: var(--text-muted); }
+  .maps-search-bar input::placeholder { color: var(--text-muted); }
+
+  .maps-search-bar button {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    white-space: nowrap;
+  }
+
+  /* Navigation panel */
+  .nav-panel {
+    display: none;
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    z-index: 10;
+    max-height: 45%;
+    overflow: hidden;
+    flex-direction: column;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
+  }
+  .nav-panel.active { display: flex; }
+
+  .nav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    flex-shrink: 0;
+  }
+
+  .nav-current-step {
+    font-size: 18px;
+    font-weight: 600;
+    flex: 1;
+    line-height: 1.3;
+  }
+
+  .nav-distance {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent-open);
+    background: rgba(0, 212, 170, 0.1);
+    padding: 4px 10px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    margin-left: 12px;
+  }
+
+  .nav-close-btn {
+    background: none; border: none; color: var(--text-secondary);
+    cursor: pointer; padding: 6px; border-radius: 8px; margin-left: 8px;
+    display: flex;
+  }
+  .nav-close-btn:hover { color: var(--danger); }
+  .nav-close-btn svg { width: 18px; height: 18px; }
+
+  .nav-steps {
+    overflow-y: auto;
+    padding: 0 20px 16px;
+    flex: 1;
+  }
+
+  .nav-step {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--text-secondary);
+    align-items: flex-start;
+  }
+  .nav-step:last-child { border-bottom: none; }
+  .nav-step.active { color: var(--text-primary); font-weight: 500; }
+
+  .nav-step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--bg-secondary);
+    padding: 2px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .nav-step.active .nav-step-num { background: var(--accent-open); color: var(--bg-primary); }
+
+  /* Loading spinner */
+  .spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--text-primary);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(10,10,15,0.8);
+    z-index: 20;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .loading-overlay.active { display: flex; }
+  .loading-overlay .spinner { width: 32px; height: 32px; border-width: 3px; }
+  .loading-overlay span { color: var(--text-secondary); font-size: 14px; }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeIn 0.4s ease-out; }
+
+  /* Autocomplete dropdown */
+  .places-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    margin-top: 4px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 20;
+    display: none;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .places-dropdown.active { display: block; }
+
+  .place-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .place-item:last-child { border-bottom: none; }
+  .place-item:hover { background: var(--bg-card-hover); }
+  .place-item .place-main { font-weight: 500; }
+  .place-item .place-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* Toast notifications */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 12px 24px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    z-index: 100;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { border-color: var(--danger); }
 </style>
 </head>
 <body>
-<div class="app">
-<div class="top">
-<div class="t">🚗 CarScreen</div>
-<div class="gps warn" id="gpsStatus">📍 Waiting...</div>
-</div>
-<div class="main">
 
-<div class="panel active" id="p-connect">
-<div class="connect">
-<h1>Enter Code</h1>
-<p class="sub">From your CarScreen Hub app</p>
-<div class="code-input">
-<input type="text" maxlength="1" id="c1" oninput="codeInput(this,1)" autofocus>
-<input type="text" maxlength="1" id="c2" oninput="codeInput(this,2)">
-<input type="text" maxlength="1" id="c3" oninput="codeInput(this,3)">
-<input type="text" maxlength="1" id="c4" oninput="codeInput(this,4)">
-<input type="text" maxlength="1" id="c5" oninput="codeInput(this,5)">
-<input type="text" maxlength="1" id="c6" oninput="codeInput(this,6)">
-</div>
-<button onclick="connect()" id="connectBtn">Connect</button>
-<div class="status" id="connectStatus"></div>
-</div>
-</div>
+<!-- ═══════ LANDING SCREEN ═══════ -->
+<div id="landing">
+  <div class="landing-logo">CarScreen</div>
+  <h1 class="landing-title">Hub</h1>
+  <p class="landing-subtitle">Select your connection mode</p>
 
-<div class="panel" id="p-home">
-<div class="home">
-<h1>CarScreen</h1>
-<p class="sub">Your in-car entertainment hub</p>
-<div class="tiles">
-<div class="tile" onclick="go('yt')"><div class="i">▶️</div><div class="l">YouTube</div></div>
-<div class="tile" onclick="go('maps')"><div class="i">🗺️</div><div class="l">Navigation</div></div>
-</div>
-</div>
+  <div class="mode-buttons">
+    <div class="mode-btn open" onclick="startApp('open')">
+      <div class="mode-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      </div>
+      <span class="mode-label">Open</span>
+      <span class="mode-desc">Direct connection<br>Faster, no proxy</span>
+    </div>
+
+    <div class="mode-btn secure" onclick="startApp('secure')">
+      <div class="mode-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <span class="mode-label">Secure</span>
+      <span class="mode-desc">Proxied traffic<br>Privacy enhanced</span>
+    </div>
+  </div>
 </div>
 
-<div class="panel" id="p-yt">
-<div class="yt">
-<div class="search">
-<input id="ytQ" placeholder="Search YouTube..." onkeydown="if(event.key==='Enter')ytSearch()">
-<button onclick="ytSearch()">Search</button>
-</div>
-<div class="player hide" id="ytP">
-<button class="player-close" onclick="ytClose()">✕</button>
-<iframe id="ytF" allow="autoplay;fullscreen;encrypted-media" allowfullscreen frameborder="0"></iframe>
-</div>
-<div class="results" id="ytR"><div class="empty"><div class="icon">🎬</div>Search for videos above</div></div>
-</div>
+<!-- ═══════ APP SCREEN ═══════ -->
+<div id="app">
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="top-left">
+      <button class="back-btn" onclick="goLanding()" title="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="tab-group">
+        <button class="tab-btn active" data-tab="youtube" onclick="switchTab('youtube')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31.9 31.9 0 0 0 0 12a31.9 31.9 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31.9 31.9 0 0 0 24 12a31.9 31.9 0 0 0-.5-5.8zM9.5 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
+          YouTube
+        </button>
+        <button class="tab-btn" data-tab="maps" onclick="switchTab('maps')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+          Maps
+        </button>
+      </div>
+    </div>
+    <span class="connection-badge" id="connBadge">OPEN</span>
+  </div>
+
+  <!-- YouTube Tab -->
+  <div class="tab-content active" id="tab-youtube">
+    <div id="ytSearchView">
+      <div class="yt-search-bar">
+        <input type="text" id="ytSearchInput" placeholder="Search YouTube..." autocomplete="off"
+               onkeydown="if(event.key==='Enter')searchYouTube()">
+        <button onclick="searchYouTube()">Search</button>
+      </div>
+      <div class="yt-results" id="ytResults">
+        <div class="yt-placeholder">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31.9 31.9 0 0 0 0 12a31.9 31.9 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31.9 31.9 0 0 0 24 12a31.9 31.9 0 0 0-.5-5.8zM9.5 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
+          <span>Search for videos to watch</span>
+        </div>
+      </div>
+    </div>
+    <div class="yt-player-wrap" id="ytPlayerWrap">
+      <div class="yt-player-bar">
+        <button class="yt-back-btn" onclick="closePlayer()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="yt-player-title" id="ytPlayerTitle"></span>
+      </div>
+      <iframe class="yt-player-frame" id="ytPlayerFrame" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+    </div>
+  </div>
+
+  <!-- Maps Tab -->
+  <div class="tab-content" id="tab-maps">
+    <div class="maps-container">
+      <div class="maps-search-bar" style="position:relative;">
+        <input type="text" id="mapsSearchInput" placeholder="Search destination..."
+               autocomplete="off" oninput="onPlaceInput()" onkeydown="if(event.key==='Enter')searchPlace()">
+        <div class="places-dropdown" id="placesDropdown"></div>
+        <button onclick="searchPlace()">Navigate</button>
+      </div>
+      <div id="map"></div>
+
+      <div class="nav-panel" id="navPanel">
+        <div class="nav-header">
+          <div class="nav-current-step" id="navCurrentStep">—</div>
+          <div class="nav-distance" id="navETA">—</div>
+          <button class="nav-close-btn" onclick="closeNav()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="nav-steps" id="navSteps"></div>
+      </div>
+
+      <div class="loading-overlay" id="mapsLoading">
+        <div class="spinner"></div>
+        <span>Calculating route...</span>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="panel" id="p-maps">
-<div class="maps">
-<div class="bar" id="searchBar">
-<div class="row">
-<input id="destInput" placeholder="Search destination..." oninput="placeSearch()" onkeydown="if(event.key==='Enter')selectFirst()">
-<button onclick="selectFirst()">Go</button>
-</div>
-<div class="suggestions" id="suggestions"></div>
-</div>
-<div class="mapwrap">
-<div id="map"></div>
-<div class="hud">
-<div class="speed-box"><span class="spd" id="speed">0</span><span class="unit">km/h</span></div>
-<div class="map-btns">
-<button onclick="zoomIn()">+</button>
-<button onclick="zoomOut()">−</button>
-<button id="lockBtn" class="on" onclick="toggleLock()">🎯</button>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-</div>
-<nav class="nav" id="nav" style="display:none">
-<button class="on" onclick="go('home')"><span class="icon">🏠</span>Home</button>
-<button onclick="go('yt')"><span class="icon">▶️</span>YouTube</button>
-<button onclick="go('maps')"><span class="icon">🗺️</span>Maps</button>
-</nav>
-</div>
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
 <script>
-var map, marker, sessionCode = '', connected = false;
-var lat = 0, lng = 0, speed = 0, bearing = 0;
-var locked = true, evtSource = null;
-var pendingCallbacks = {};
+// ══════════════════════════════════════════
+// CONFIGURATION
+// ══════════════════════════════════════════
+const CONFIG = {
+  // Replace with your Cloudflare Worker URL for secure mode
+  WORKER_URL: 'https://carscreen-proxy.YOUR_SUBDOMAIN.workers.dev',
 
-// Check URL hash for code
-(function() {
-    var hash = window.location.hash.replace('#', '');
-    if (hash && hash.length === 6) {
-        for (var i = 0; i < 6; i++) {
-            document.getElementById('c' + (i+1)).value = hash[i];
-        }
-        setTimeout(connect, 500);
+  // Replace with your Google Maps API key
+  MAPS_API_KEY: 'YOUR_GOOGLE_MAPS_API_KEY',
+
+  // Invidious instances for YouTube search (open mode)
+  INVIDIOUS_INSTANCES: [
+    'https://inv.tux.pizza',
+    'https://invidious.fdn.fr',
+    'https://vid.puffyan.us',
+    'https://invidious.nerdvpn.de',
+    'https://iv.ggtyler.dev'
+  ],
+
+  // Piped instances as fallback
+  PIPED_INSTANCES: [
+    'https://pipedapi.kavin.rocks',
+    'https://pipedapi.adminforge.de',
+    'https://api.piped.projectsegfau.lt'
+  ]
+};
+
+let currentMode = 'open'; // 'open' or 'secure'
+let map = null;
+let directionsService = null;
+let directionsRenderer = null;
+let userMarker = null;
+let watchId = null;
+let currentRoute = null;
+let currentStepIndex = 0;
+let autocompleteService = null;
+let selectedPlace = null;
+
+// ══════════════════════════════════════════
+// APP INIT
+// ══════════════════════════════════════════
+function startApp(mode) {
+  currentMode = mode;
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  const badge = document.getElementById('connBadge');
+  badge.textContent = mode.toUpperCase();
+  badge.className = 'connection-badge ' + mode;
+
+  // Load Google Maps
+  if (!map) loadGoogleMaps();
+}
+
+function goLanding() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('landing').style.display = 'flex';
+  if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+  if (tab === 'maps' && map) {
+    setTimeout(() => google.maps.event.trigger(map, 'resize'), 100);
+  }
+}
+
+// ══════════════════════════════════════════
+// YOUTUBE
+// ══════════════════════════════════════════
+async function fetchWithProxy(url) {
+  if (currentMode === 'secure') {
+    return fetch(CONFIG.WORKER_URL + '/proxy?url=' + encodeURIComponent(url));
+  }
+  return fetch(url);
+}
+
+async function searchYouTube() {
+  const query = document.getElementById('ytSearchInput').value.trim();
+  if (!query) return;
+
+  const results = document.getElementById('ytResults');
+  results.innerHTML = '<div class="yt-placeholder"><div class="spinner"></div><span>Searching...</span></div>';
+
+  // Try Invidious instances
+  for (const instance of CONFIG.INVIDIOUS_INSTANCES) {
+    try {
+      const url = `${instance}/api/v1/search?q=${encodeURIComponent(query)}&type=video`;
+      const resp = await fetchWithProxy(url);
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      if (data && data.length > 0) {
+        renderYTResults(data.filter(v => v.type === 'video').slice(0, 15), 'invidious');
+        return;
+      }
+    } catch (e) { continue; }
+  }
+
+  // Fallback to Piped
+  for (const instance of CONFIG.PIPED_INSTANCES) {
+    try {
+      const url = `${instance}/search?q=${encodeURIComponent(query)}&filter=videos`;
+      const resp = await fetchWithProxy(url);
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      if (data && data.items && data.items.length > 0) {
+        renderYTResults(data.items.slice(0, 15), 'piped');
+        return;
+      }
+    } catch (e) { continue; }
+  }
+
+  results.innerHTML = '<div class="yt-placeholder"><span>No results found. Try a different search.</span></div>';
+}
+
+function renderYTResults(videos, source) {
+  const container = document.getElementById('ytResults');
+  container.innerHTML = '';
+
+  videos.forEach((v, i) => {
+    const card = document.createElement('div');
+    card.className = 'yt-card fade-in';
+    card.style.animationDelay = (i * 0.05) + 's';
+
+    let videoId, title, channel, thumb;
+
+    if (source === 'invidious') {
+      videoId = v.videoId;
+      title = v.title;
+      channel = v.author || '';
+      thumb = v.videoThumbnails?.[4]?.url || v.videoThumbnails?.[0]?.url || '';
+      // Fix relative thumbnail URLs
+      if (thumb.startsWith('/')) thumb = CONFIG.INVIDIOUS_INSTANCES[0] + thumb;
+    } else {
+      // Piped
+      videoId = (v.url || '').replace('/watch?v=', '');
+      title = v.title;
+      channel = v.uploaderName || '';
+      thumb = v.thumbnail || '';
     }
-})();
 
-function codeInput(el, n) {
-    el.value = el.value.toUpperCase();
-    if (el.value && n < 6) document.getElementById('c' + (n+1)).focus();
+    card.innerHTML = `
+      <img class="yt-thumb" src="${thumb}" alt="" loading="lazy" onerror="this.style.display='none'">
+      <div class="yt-info">
+        <div class="yt-title">${escapeHtml(title)}</div>
+        <div class="yt-channel">${escapeHtml(channel)}</div>
+      </div>
+    `;
+    card.onclick = () => playVideo(videoId, title);
+    container.appendChild(card);
+  });
 }
 
-function getCode() {
-    var code = '';
-    for (var i = 1; i <= 6; i++) code += document.getElementById('c' + i).value;
-    return code.toUpperCase();
+function playVideo(videoId, title) {
+  document.getElementById('ytSearchView').style.display = 'none';
+  const wrap = document.getElementById('ytPlayerWrap');
+  wrap.classList.add('active');
+  document.getElementById('ytPlayerTitle').textContent = title;
+
+  let embedUrl;
+  if (currentMode === 'secure') {
+    // Use Invidious embed through proxy
+    embedUrl = CONFIG.INVIDIOUS_INSTANCES[0] + '/embed/' + videoId + '?autoplay=1';
+  } else {
+    embedUrl = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&rel=0';
+  }
+  document.getElementById('ytPlayerFrame').src = embedUrl;
 }
 
-function connect() {
-    var code = getCode();
-    if (code.length !== 6) { showStatus('Enter 6-character code', 'err'); return; }
-    
-    sessionCode = code;
-    showStatus('Connecting...', '');
-    document.getElementById('connectBtn').disabled = true;
-    
-    if (evtSource) evtSource.close();
-    
-    // Listen for data from phone
-    evtSource = new EventSource('https://ntfy.sh/carscreen-' + code + '/sse');
-    
-    evtSource.onmessage = function(e) {
-        try {
-            var msg = JSON.parse(e.data);
-            if (msg.message) {
-                var data = JSON.parse(msg.message);
-                handleMessage(data);
-                if (!connected) { connected = true; showConnected(); }
-            }
-        } catch(err) {}
-    };
-    
-    evtSource.onerror = function() {
-        if (!connected) {
-            showStatus('Connection failed', 'err');
-            document.getElementById('connectBtn').disabled = false;
-        }
-    };
-    
-    setTimeout(function() {
-        if (!connected) {
-            showStatus('No signal. Is the app running?', 'err');
-            document.getElementById('connectBtn').disabled = false;
-        }
-    }, 15000);
+function closePlayer() {
+  document.getElementById('ytPlayerFrame').src = '';
+  document.getElementById('ytPlayerWrap').classList.remove('active');
+  document.getElementById('ytSearchView').style.display = '';
 }
 
-function handleMessage(data) {
-    var type = data.type;
-    console.log('Received message type:', type, data);
-    
-    if (type === 'gps') {
-        onGPS(data);
-    } else if (type === 'yt_results' || type === 'place_results') {
-        console.log('Got results for id:', data.id, 'count:', data.results ? data.results.length : 0);
-        var cb = pendingCallbacks[data.id];
-        if (cb) {
-            cb(data.results);
-            delete pendingCallbacks[data.id];
-        } else {
-            console.log('No callback found for id:', data.id);
-        }
-    }
-}
-
-function sendCommand(cmd, callback) {
-    var id = 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-    cmd.id = id;
-    if (callback) pendingCallbacks[id] = callback;
-    
-    var url = 'https://ntfy.sh/carscreen-cmd-' + sessionCode;
-    console.log('Sending command to:', url, cmd);
-    
-    fetch(url, {
-        method: 'POST',
-        body: JSON.stringify(cmd),
-        headers: { 'Content-Type': 'application/json' }
-    }).then(function(r) {
-        console.log('Command sent, status:', r.status);
-    }).catch(function(e) {
-        console.error('Command send failed:', e);
-    });
-    
-    // Timeout
-    setTimeout(function() {
-        if (pendingCallbacks[id]) {
-            console.log('Command timeout:', id);
-            pendingCallbacks[id]([]);
-            delete pendingCallbacks[id];
-        }
-    }, 30000);
-}
-
-function showStatus(msg, type) {
-    var el = document.getElementById('connectStatus');
-    el.textContent = msg;
-    el.className = 'status ' + type;
-}
-
-function showConnected() {
-    document.getElementById('p-connect').classList.remove('active');
-    document.getElementById('p-home').classList.add('active');
-    document.getElementById('nav').style.display = 'flex';
-    document.getElementById('gpsStatus').className = 'gps ok';
-    document.getElementById('gpsStatus').textContent = '📍 Connected';
-    initMap();
-}
-
-function onGPS(data) {
-    lat = data.lat;
-    lng = data.lng;
-    speed = Math.round((data.speed || 0) * 3.6);
-    bearing = data.bearing || 0;
-    
-    document.getElementById('speed').textContent = speed;
-    
-    if (map && marker) {
-        marker.setLatLng([lat, lng]);
-        if (locked) map.setView([lat, lng], map.getZoom());
-    }
-    
-    document.getElementById('gpsStatus').className = 'gps ok';
-    document.getElementById('gpsStatus').textContent = '📍 ' + lat.toFixed(4) + ', ' + lng.toFixed(4);
+// ══════════════════════════════════════════
+// GOOGLE MAPS
+// ══════════════════════════════════════════
+function loadGoogleMaps() {
+  const script = document.createElement('script');
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.MAPS_API_KEY}&libraries=places&callback=initMap`;
+  script.async = true;
+  script.defer = true;
+  document.head.appendChild(script);
 }
 
 function initMap() {
-    if (map) return;
-    
-    map = L.map('map', { center: [lat || 23.58, lng || 58.38], zoom: 16, zoomControl: false });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
-    marker = L.circleMarker([lat || 23.58, lng || 58.38], {
-        radius: 10, fillColor: '#3b8bff', fillOpacity: 1, color: '#fff', weight: 3
-    }).addTo(map);
+  const darkStyle = [
+    { elementType: 'geometry', stylers: [{ color: '#1a1a28' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#0a0a0f' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#8888a0' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a2a3a' }] },
+    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#1a1a28' }] },
+    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3a3a50' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e0e1a' }] },
+    { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#222236' }] },
+    { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#1a1a28' }] },
+  ];
+
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 23.5880, lng: 58.3829 }, // Muscat default
+    zoom: 13,
+    styles: darkStyle,
+    disableDefaultUI: true,
+    zoomControl: true,
+    zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
+    gestureHandling: 'greedy'
+  });
+
+  directionsService = new google.maps.DirectionsService();
+  directionsRenderer = new google.maps.DirectionsRenderer({
+    map: map,
+    suppressMarkers: false,
+    polylineOptions: { strokeColor: '#00d4aa', strokeWeight: 5, strokeOpacity: 0.9 }
+  });
+
+  autocompleteService = new google.maps.places.AutocompleteService();
+
+  // Start tracking location
+  startLocationTracking();
 }
 
-function go(p) {
-    document.querySelectorAll('.panel').forEach(function(el) { el.classList.remove('active'); });
-    document.getElementById('p-' + p).classList.add('active');
-    document.querySelectorAll('.nav button').forEach(function(btn, i) {
-        btn.classList.toggle('on', (p==='home'&&i===0)||(p==='yt'&&i===1)||(p==='maps'&&i===2));
+function startLocationTracking() {
+  if (!navigator.geolocation) {
+    showToast('Geolocation not supported', true);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      map.setCenter(loc);
+      map.setZoom(15);
+      updateUserMarker(loc);
+    },
+    () => showToast('Enable location access for navigation', true),
+    { enableHighAccuracy: true }
+  );
+
+  watchId = navigator.geolocation.watchPosition(
+    pos => {
+      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      updateUserMarker(loc);
+      if (currentRoute) updateNavigation(loc);
+    },
+    null,
+    { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+  );
+}
+
+function updateUserMarker(loc) {
+  if (!userMarker) {
+    userMarker = new google.maps.Marker({
+      position: loc,
+      map: map,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: '#00d4aa',
+        fillOpacity: 1,
+        strokeColor: '#fff',
+        strokeWeight: 2,
+      },
+      zIndex: 999
     });
-    if (p === 'maps' && map) setTimeout(function() { map.invalidateSize(); }, 100);
+  } else {
+    userMarker.setPosition(loc);
+  }
 }
 
-function zoomIn() { if (map) map.zoomIn(); }
-function zoomOut() { if (map) map.zoomOut(); }
-function toggleLock() {
-    locked = !locked;
-    document.getElementById('lockBtn').classList.toggle('on', locked);
-    if (locked && map) map.setView([lat, lng], map.getZoom());
-}
-
-// YouTube - search via phone
-function ytSearch() {
-    var q = document.getElementById('ytQ').value.trim();
-    if (!q) return;
-    
-    var results = document.getElementById('ytR');
-    results.innerHTML = '<div class="empty"><div class="icon">🔍</div>Searching via phone...<br><small>Code: ' + sessionCode + '</small></div>';
-    
-    console.log('YouTube search:', q, 'session:', sessionCode);
-    
-    sendCommand({ type: 'yt_search', q: q }, function(data) {
-        console.log('YouTube results received:', data);
-        if (!data || data.length === 0) {
-            results.innerHTML = '<div class="empty"><div class="icon">😕</div>No results<br><small>Check phone app is running</small></div>';
-            return;
+// Place autocomplete
+let placeDebounce = null;
+function onPlaceInput() {
+  clearTimeout(placeDebounce);
+  const q = document.getElementById('mapsSearchInput').value.trim();
+  if (q.length < 3) {
+    document.getElementById('placesDropdown').classList.remove('active');
+    return;
+  }
+  placeDebounce = setTimeout(() => {
+    if (!autocompleteService) return;
+    autocompleteService.getPlacePredictions(
+      { input: q, componentRestrictions: {} },
+      (predictions, status) => {
+        const dd = document.getElementById('placesDropdown');
+        if (status !== 'OK' || !predictions) {
+          dd.classList.remove('active');
+          return;
         }
-        
-        var html = '<div class="vlist">';
-        data.forEach(function(v) {
-            var thumb = v.thumbnail || '';
-            if (thumb.startsWith('//')) thumb = 'https:' + thumb;
-            var isChannel = v.type === 'channel';
-            var onclick = isChannel ? 'ytChannel(\'' + v.id + '\')' : 'ytPlay(\'' + v.id + '\')';
-            var badge = isChannel ? '<span class="ch-badge">CHANNEL</span>' : '';
-            var info = isChannel ? (v.subs || '') : (v.channel || '') + ' • ' + (v.duration || '');
-            
-            html += '<div class="vcard' + (isChannel ? ' channel' : '') + '" onclick="' + onclick + '">' +
-                '<div class="th' + (isChannel ? ' round' : '') + '"><img src="' + esc(thumb) + '" onerror="this.style.display=\'none\'"></div>' +
-                '<div class="inf"><div class="tt">' + badge + esc(v.title) + '</div>' +
-                '<div class="ch">' + esc(info) + '</div></div></div>';
-        });
-        results.innerHTML = html + '</div>';
-    });
+        dd.innerHTML = predictions.slice(0, 5).map(p => `
+          <div class="place-item" onclick="selectPlace('${p.place_id}', '${escapeHtml(p.description)}')">
+            <div class="place-main">${escapeHtml(p.structured_formatting?.main_text || p.description)}</div>
+            <div class="place-sub">${escapeHtml(p.structured_formatting?.secondary_text || '')}</div>
+          </div>
+        `).join('');
+        dd.classList.add('active');
+      }
+    );
+  }, 300);
 }
 
-function ytPlay(id) {
-    var player = document.getElementById('ytP');
-    var iframe = document.getElementById('ytF');
-    player.classList.remove('hide');
-    iframe.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0';
+function selectPlace(placeId, description) {
+  document.getElementById('mapsSearchInput').value = description;
+  document.getElementById('placesDropdown').classList.remove('active');
+  selectedPlace = placeId;
+  navigateToPlace(placeId);
 }
 
-function ytChannel(id) {
-    var player = document.getElementById('ytP');
-    var iframe = document.getElementById('ytF');
-    player.classList.remove('hide');
-    iframe.src = 'https://www.youtube.com/channel/' + id + '/videos';
-}
+function searchPlace() {
+  document.getElementById('placesDropdown').classList.remove('active');
+  const q = document.getElementById('mapsSearchInput').value.trim();
+  if (!q) return;
 
-function ytClose() {
-    document.getElementById('ytP').classList.add('hide');
-    document.getElementById('ytF').src = '';
-}
+  if (selectedPlace) {
+    navigateToPlace(selectedPlace);
+    selectedPlace = null;
+    return;
+  }
 
-// Place search - via phone
-var searchTimeout;
-function placeSearch() {
-    clearTimeout(searchTimeout);
-    var q = document.getElementById('destInput').value.trim();
-    if (q.length < 3) { document.getElementById('suggestions').classList.remove('show'); return; }
-    
-    searchTimeout = setTimeout(function() {
-        console.log('Place search:', q, 'at', lat, lng);
-        
-        var sug = document.getElementById('suggestions');
-        sug.innerHTML = '<div class="item"><div class="name">Searching...</div></div>';
-        sug.classList.add('show');
-        
-        sendCommand({ type: 'place_search', q: q, lat: lat, lng: lng }, function(data) {
-            console.log('Place results:', data);
-            if (!data || data.length === 0) { 
-                sug.innerHTML = '<div class="item"><div class="name">No results</div></div>';
-                return; 
-            }
-            
-            sug.innerHTML = data.map(function(p) {
-                return '<div class="item" onclick="selectPlace(' + p.lat + ',' + p.lng + ',\'' + esc(p.name) + '\')">' +
-                    '<div class="name">' + esc(p.name) + '</div>' +
-                    '<div class="addr">' + esc(p.address) + '</div></div>';
-            }).join('');
-        });
-    }, 500);
-}
-
-function selectPlace(plat, plng, name) {
-    document.getElementById('suggestions').classList.remove('show');
-    document.getElementById('destInput').value = name;
-    if (map) {
-        map.setView([plat, plng], 15);
-        L.marker([plat, plng]).addTo(map).bindPopup(name).openPopup();
+  // Geocode the text query
+  const geocoder = new google.maps.Geocoder();
+  geocoder.geocode({ address: q }, (results, status) => {
+    if (status === 'OK' && results[0]) {
+      startNavigation(results[0].geometry.location);
+    } else {
+      showToast('Place not found', true);
     }
+  });
 }
 
-function selectFirst() {
-    var first = document.querySelector('#suggestions .item');
-    if (first) first.click();
+function navigateToPlace(placeId) {
+  const service = new google.maps.places.PlacesService(map);
+  service.getDetails({ placeId: placeId, fields: ['geometry'] }, (place, status) => {
+    if (status === 'OK' && place.geometry) {
+      startNavigation(place.geometry.location);
+    } else {
+      showToast('Could not get place details', true);
+    }
+  });
 }
 
-function esc(s) {
-    if (!s) return '';
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+function startNavigation(destination) {
+  if (!userMarker) {
+    showToast('Waiting for GPS location...', true);
+    return;
+  }
+
+  const loading = document.getElementById('mapsLoading');
+  loading.classList.add('active');
+
+  directionsService.route({
+    origin: userMarker.getPosition(),
+    destination: destination,
+    travelMode: google.maps.TravelMode.DRIVING,
+  }, (result, status) => {
+    loading.classList.remove('active');
+
+    if (status !== 'OK') {
+      showToast('Could not calculate route: ' + status, true);
+      return;
+    }
+
+    directionsRenderer.setDirections(result);
+    currentRoute = result.routes[0];
+    currentStepIndex = 0;
+    renderNavPanel();
+  });
 }
+
+function renderNavPanel() {
+  const panel = document.getElementById('navPanel');
+  const leg = currentRoute.legs[0];
+  const steps = leg.steps;
+
+  // ETA
+  document.getElementById('navETA').textContent = leg.duration.text + ' · ' + leg.distance.text;
+
+  // Current step
+  document.getElementById('navCurrentStep').innerHTML = stripHtml(steps[0].instructions);
+
+  // All steps
+  const stepsEl = document.getElementById('navSteps');
+  stepsEl.innerHTML = steps.map((s, i) => `
+    <div class="nav-step ${i === 0 ? 'active' : ''}" id="navStep${i}">
+      <span class="nav-step-num">${i + 1}</span>
+      <span>${stripHtml(s.instructions)} <span style="color:var(--text-muted)">(${s.distance.text})</span></span>
+    </div>
+  `).join('');
+
+  panel.classList.add('active');
+}
+
+function updateNavigation(userLoc) {
+  if (!currentRoute) return;
+
+  const steps = currentRoute.legs[0].steps;
+  if (currentStepIndex >= steps.length) return;
+
+  const stepEnd = steps[currentStepIndex].end_location;
+  const dist = haversine(userLoc.lat, userLoc.lng, stepEnd.lat(), stepEnd.lng());
+
+  // If within 30m of step end, advance
+  if (dist < 30) {
+    currentStepIndex++;
+    if (currentStepIndex < steps.length) {
+      document.getElementById('navCurrentStep').innerHTML = stripHtml(steps[currentStepIndex].instructions);
+
+      // Update active step
+      document.querySelectorAll('.nav-step').forEach((el, i) => {
+        el.classList.toggle('active', i === currentStepIndex);
+      });
+
+      // Scroll active step into view
+      const activeEl = document.getElementById('navStep' + currentStepIndex);
+      if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      document.getElementById('navCurrentStep').textContent = '🏁 You have arrived!';
+    }
+  }
+}
+
+function closeNav() {
+  document.getElementById('navPanel').classList.remove('active');
+  currentRoute = null;
+  directionsRenderer.setDirections({ routes: [] });
+}
+
+// ══════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+function stripHtml(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html || '';
+  return tmp.textContent || tmp.innerText || '';
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  setTimeout(() => t.classList.add('show'), 10);
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Close dropdown when clicking elsewhere
+document.addEventListener('click', e => {
+  if (!e.target.closest('.maps-search-bar')) {
+    document.getElementById('placesDropdown')?.classList.remove('active');
+  }
+});
 </script>
 </body>
 </html>
